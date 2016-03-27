@@ -115,6 +115,29 @@
                     <img src="images/microservices.png">
                     <a href="https://www.tigerteam.dk/2014/microservices-its-not-only-the-size-that-matters-its-also-how-you-use-them-part-4/">source</a>
 				</section>
+<!-- ####################################################################  -->
+				<section>
+					<h3>Sync does not scale (TM)</h3>
+                    <pre><code class="hljs python" data-trim>
+from django.http import HttpResponse
+def my_view(request):
+    # blocks thread
+    r = requests.get('http://graph.facebook.com/v2.5/{uid}')
+    data = r.json()
+    # ...
+    return HttpResponse(status=201)
+
+
+# --------------------------------------
+from aiohttp import web
+async def my_view(request):
+    session = request.app['session']
+    # context switch here
+    r = await session.get('http://graph.facebook.com/v2.5/{uid}')
+    data = await r.json()
+    return web.Response(status=201)
+                    </code></pre>
+				</section>
 				</section>
 
 				<section style="text-align: left;" data-background="images/dr2.png" data-state="img-right">
