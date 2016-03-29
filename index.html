@@ -87,6 +87,7 @@
                         <li>Resource Management</li>
                         <li>ThreadPool Examples</li>
                         <li>ProcessPool Examples</li>
+                        <li>ProcessPool Examples</li>
                     </ul>
 				</section>
 <!-- ####################################################################  -->
@@ -170,12 +171,24 @@ loop.close()
                     <a href="https://groups.google.com/forum/#!msg/python-tulip/hr1kPZfMX8U/9uqdlbRuRsoJ">https://groups.google.com/forum/#!msg/python-tulip/hr1kPZfMX8U/9uqdlbRuRsoJ</a>
 				</section>
 <!-- ####################################################################  -->
+				<section>
+                    <h3>Convenience of explicit loop</h3>
+                    <ul>
+                        <li>Increase testability (Hello Twisted!)</li>
+                        <li>Fast access to bunch of useful methods: <code>run_in_executor,
+                                create_subprocess_exec, create_task </code></li>
+                        <li>Easier to reason code when you have nonstandard case like: two
+                            threads two event loops, or main thread is sync second is async</li>
+                    </ul>
+
+				</section>
+<!-- ####################################################################  -->
 
 				<section style="text-align: left;" data-background="images/dr2.png" data-state="img-right">
 					<h1>THE END</h1>
 					<p>
 						<a href="http://jettify.github.io/pyconua2016"> http://jettify.github.io/pyconua2016</a> <br>
-					</p>
+                    </p>
 				</section>
 <!-- ####################################################################  -->
 
