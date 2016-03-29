@@ -127,8 +127,8 @@ def my_view(request):
     # ...
     return HttpResponse(status=201)
 
-
 # --------------------------------------
+
 from aiohttp import web
 async def my_view(request):
     session = request.app['session']
@@ -138,7 +138,38 @@ async def my_view(request):
     return web.Response(status=201)
                     </code></pre>
 				</section>
+<!-- ####################################################################  -->
+				<section>
+                    <h1>Asyncio Tips and Tricks</h1>
+                    <img src="images/funny.png">
 				</section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Explicit Event Loop</h3>
+					<pre><code class="hljs python" data-trim>
+import asyncio
+async def go(loop):
+    future = asyncio.Future(loop=loop)
+    future.set_result(None)
+    await asyncio.sleep(3.0, loop=loop)
+    await future
+    print("foo")
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(go(loop))
+loop.close()
+					</code></pre>
+				</section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Glyph on global event loop</h3>
+                    <blockquote>
+                        <p>It would really be a pity if Tulip repeated our billion-dollar mistake [global reactor] ;-)</p>
+                        <footer>--Glyph Lefkowitz / author of Twisted</footer>
+                    </blockquote>
+                    <a href="https://groups.google.com/forum/#!msg/python-tulip/hr1kPZfMX8U/9uqdlbRuRsoJ">https://groups.google.com/forum/#!msg/python-tulip/hr1kPZfMX8U/9uqdlbRuRsoJ</a>
+				</section>
+<!-- ####################################################################  -->
 
 				<section style="text-align: left;" data-background="images/dr2.png" data-state="img-right">
 					<h1>THE END</h1>
