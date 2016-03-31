@@ -183,6 +183,27 @@ loop.close()
 
 				</section>
 <!-- ####################################################################  -->
+				<section>
+                    <h3>Think About Graceful Shutdown Early </h3>
+					<pre><code class="hljs python" data-trim>
+import asyncio, signal
+
+is_working = True
+async def do_work(loop):
+    while is_working:
+        await asyncio.sleep(1, loop=loop)
+
+def signal_handler(loop):
+    loop.remove_signal_handler(signal.SIGTERM)
+    is_working = False
+
+loop = asyncio.get_event_loop()
+loop.add_signal_handler(signal.SIGTERM, signal_handler, loop)
+loop.run_until_complete(do_work(loop))
+					</code></pre>
+Asyncio will warn you with bunch of tracebacks if you do not do proper shutdown
+				</section>
+<!-- ####################################################################  -->
 
 				<section style="text-align: left;" data-background="images/dr2.png" data-state="img-right">
 					<h1>THE END</h1>
