@@ -132,6 +132,7 @@ async def my_view(request):
     data = await r.json()
     return web.Response(status=201)
                     </code></pre>
+                    Amazon S3 API could return response in over 9000s!
 				</section>
 <!-- ####################################################################  -->
 				<section>
@@ -178,7 +179,12 @@ loop.close()
 				</section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Think About Graceful Shutdown Early </h3>
+                    <h3>TIP: Think About Graceful Shutdown Early</h3>
+                    <p><img src="images/kill-9-1.jpg"></p>
+				</section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Asyncio Graceful Shutdown Early </h3>
 					<pre><code class="hljs python" data-trim>
 import asyncio, signal
 
