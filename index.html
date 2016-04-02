@@ -83,16 +83,14 @@
 					<h3>Agenda</h3>
                     <ul>
                         <li>Motivation why to use async/asyncio at all</li>
-                        <li>Explicit Event Loop</li>
-                        <li>Resource Management</li>
-                        <li>ThreadPool Examples</li>
-                        <li>ProcessPool Examples</li>
-                        <li>ProcessPool Examples</li>
+                        <li>Asyncio Execution Modes</li>
+                        <li>Asyncio tips and tricks</li>
+                        <li>Asyncio pitfalls</li>
                     </ul>
 				</section>
 <!-- ####################################################################  -->
 				<section>
-					<h3>Motivation. Why asyncio?</h3>
+					<h3>Motivation. Why async programming with asyncio?</h3>
                     <ul>
                         <li>Shiny new framework</li>
                         <li>Base line for async programming in python</li>
@@ -102,8 +100,6 @@
 				</section>
 <!-- ####################################################################  -->
 				<section>
-                    </ul>
-
                     <h3>Because we do SOA (<strike>microservices</strike>) this days...</h3>
 
                     <p><img src="images/microservices.png" height=450px></p>
@@ -136,12 +132,12 @@ async def my_view(request):
 				</section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Asyncio Tips and Tricks</hr>
+                    <h3>Asyncio Tips and Tricks</h3>
                     <img src="images/funny.jpg" height="600px">
 				</section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Explicit Event Loop</h3>
+                    <h3>TIP: Use Explicit Event Loop</h3>
 					<pre><code class="hljs python" data-trim>
 import asyncio
 async def go(loop):
@@ -256,7 +252,7 @@ import aiohttp
 
 async def go(loop):
     session = aiohttp.ClientSession(loop=loop)
-    async with session.get('http://by.pycon.org') as resp:
+    async with session.get('http://ua.pycon.org') as resp:
         data = await resp.text()
         print(data)
     session.close()
