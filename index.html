@@ -267,6 +267,43 @@ loop.run_until_complete(go(loop))
                 Connection pooling helps to save on expensive connection
                 creation.
 				</section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Be a good citizen and shutdown connection pools
+                        explicitly in your aiohttp server</h3>
+					<pre><code class="hljs python" data-trim>
+async def init(loop):
+    # setup application and extensions
+    app = web.Application(loop=loop)
+
+    # create connection to the database
+    pg = await init_postgres(conf['postgres'], loop)
+
+    async def close_pg(app):
+        pg.close()
+        await pg.wait_closed()
+
+    app.on_cleanup.append(close_pg)
+    # ...
+					</code></pre>
+				</section>
+
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Explicitly finilize background tasks</h3>
+					<pre><code class="hljs python" data-trim>
+self._reader_task = asyncio.create_task(
+    self._read_data(), loop=self._loop)
+self._reader_task.cancel()
+
+try:
+    await self._reader_task
+except asyncio.CanceledError:
+    pass
+					</code></pre>
+				</section>
+
+<!-- ####################################################################  -->
 
 				<section style="text-align: left;" data-background="images/dr2.png" data-state="img-right">
 					<h1>THE END</h1>
