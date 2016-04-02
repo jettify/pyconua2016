@@ -204,6 +204,35 @@ loop.run_until_complete(do_work(loop))
 Asyncio will warn you with bunch of tracebacks if you do not do proper shutdown
 				</section>
 <!-- ####################################################################  -->
+				<section>
+                    <h3>Graceful Shutdown aiohttp Edition </h3>
+                    <pre><code class="hljs python" data-trim>
+
+loop = asyncio.get_event_loop()
+handler = app.make_handler()
+f = loop.create_server(handler, '0.0.0.0', 8080)
+srv = loop.run_until_complete(f)
+
+def shutdown(loop)
+    loop.remove_signal_handler(signal.SIGTERM)
+    loop.stop()
+
+loop.add_signal_handler(signal.SIGTERM, shutdown, loop)
+
+loop.run_forever()
+
+srv.close()  # finish socket listening
+loop.run_until_complete(srv.wait_closed())
+
+loop.run_until_complete(app.shutdown())  # close websockets
+loop.run_until_complete(handler.finish_connections(60.0))
+loop.run_until_complete(app.cleanup())  # doc registered cleanups
+loop.close()
+                    </code></pre>
+                    Now you can be sure that all requests are safe and served
+                    and new requests is not accepted
+
+				</section>
 
 				<section style="text-align: left;" data-background="images/dr2.png" data-state="img-right">
 					<h1>THE END</h1>
