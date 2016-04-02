@@ -233,6 +233,40 @@ loop.close()
                     and new requests is not accepted
 
 				</section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>TIP: Think About Resource Lifetime to Avoid Resource
+                        (Socketes) Leak</h3>
+                    <p><img src="images/sockets.jpg" height="400px"></p>
+                    Good candidates for extra care:
+                    <ul>
+                        <li>Any rest calls to external services</li>
+                        <li>Any reconnection logic</li>
+                    </ul>
+
+				</section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Make sure all responses has been released</h3>
+                    <code>aiohttp.ClientSession</code> is your friend
+					<pre><code class="hljs python" data-trim>
+import asyncio
+import aiohttp
+
+
+async def go(loop):
+    session = aiohttp.ClientSession(loop=loop)
+    async with session.get('http://by.pycon.org') as resp:
+        data = await resp.text()
+        print(data)
+    session.close()
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(go(loop))
+					</code></pre>
+                Connection pooling helps to save on expensive connection
+                creation.
+				</section>
 
 				<section style="text-align: left;" data-background="images/dr2.png" data-state="img-right">
 					<h1>THE END</h1>
