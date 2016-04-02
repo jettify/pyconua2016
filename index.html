@@ -286,16 +286,34 @@ async def init(loop):
 
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Explicitly finilize background tasks</h3>
+                    <h3>Explicitly finalize background tasks</h3>
 					<pre><code class="hljs python" data-trim>
-self._reader_task = asyncio.create_task(
-    self._read_data(), loop=self._loop)
-self._reader_task.cancel()
+class Foo:
+    def __init__(self):
+        self._reader_task = asyncio.create_task(
+            self._read_data(), loop=self._loop)
 
-try:
-    await self._reader_task
-except asyncio.CanceledError:
-    pass
+    async def _stop_reader(self):
+        self._reader_task.cancel()
+
+        try:
+            await self._reader_task
+        except asyncio.CanceledError:
+            pass
+					</code></pre>
+				</section>
+
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Asyncio Application Execution Models</h3>
+                    <ul>
+                        <li>Event loop is the <b>leader</b>, it schedules blocking tasks using
+                            thread pool, blocking tasks is quite "short" and produces a result </li>
+                        <li>Embedded event loop, it gives work to the event loop, and then
+                            retrieves results from the event loop</li>
+                        <li>Sync thread is the <b>leader</b>, but event loop spinning in separate thread</li>
+                    </ul>
+                </section>
 					</code></pre>
 				</section>
 
