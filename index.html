@@ -345,6 +345,38 @@ loop.run_until_complete(test_example())
                     </ul>
 
                 </section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Asyncio Leader and blocking code in ProcessPool</h3>
+					<pre><code class="hljs python" data-trim>
+
+loop = asyncio.get_event_loop()
+executor = ProcessPoolExecutor(max_workers=3)
+
+def is_prime(n):
+    if n % 2 == 0: return False
+    sqrt_n = int(math.floor(math.sqrt(n)))
+    for i in range(3, sqrt_n + 1, 2): if n % i == 0: return False
+    return True
+
+async def go():
+    result = await loop.run_in_executor(executor, is_prime, 112272535095293)
+loop.run_until_complete(go(loop, executor))
+
+					</code></pre>
+                </section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>ProcessPool Notes</h3>
+                    <ul>
+                        <li>Easy to terminate</li>
+                        <li>Consumes a lot of memory</li>
+                        <li>Process should be create as soon as possible in order not to copy
+                            memory due to <code>fork()</code></li>
+                    </ul>
+
+                </section>
+<!-- ####################################################################  -->
 					</code></pre>
 				</section>
 
