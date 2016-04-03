@@ -314,6 +314,37 @@ class Foo:
                         <li>Sync thread is the <b>leader</b>, but event loop spinning in separate thread</li>
                     </ul>
                 </section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Asyncio Leader And Blocking Calls in ThreadPool</h3>
+					<pre><code class="hljs python" data-trim>
+import asyncio
+from pyodbc import connect
+
+loop = asyncio.get_event_loop()
+executor = ThreadPoolExecutor(max_workers=4)
+async def test_example():
+    dsn = 'Driver=SQLite;Database=sqlite.db'
+    conn = await loop.run_in_executor(executor, connect, dsn)
+    cursor = await loop.run_in_executor(executor, conn.cursor)
+    conn = await loop.run_in_executor(executor, cursor.execute,
+                                      'SELECT 42;')
+
+loop.run_until_complete(test_example())
+					</code></pre>
+
+                </section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>ThreadPool Notes</h3>
+                    <ul>
+                        <li>No way to kill thread if task stuck inside</li>
+                        <li>C extensions could consumer alot of virtual memory due to
+                        thread arena</li>
+                        <li>Convenient workaround for blocking calls</li>
+                    </ul>
+
+                </section>
 					</code></pre>
 				</section>
 
