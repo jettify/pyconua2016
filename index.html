@@ -377,6 +377,33 @@ loop.run_until_complete(go(loop, executor))
 
                 </section>
 <!-- ####################################################################  -->
+				<section>
+                    <h3>Sync Code is Leader, Embedded Asyncio loop</h3>
+					<pre><code class="hljs python" data-trim>
+import asyncio, aiohttp
+
+async def fetch(session, url, loop):
+    async with session.get(url) as resp:
+        data = await resp.text()
+
+def collect_data(url_list):
+    loop = asyncio.get_event_loop()
+
+    session = aiohttp.ClientSession(loop=loop)
+    coros = [fetch(sessiong, u, loop) for u in url_list]
+
+    loop.run_until_complete(asyncio.gather(*coros, loop=loop))
+    loop.run_until_complete(session.close())
+    loop.close()
+
+def main():
+    url_list = db.fethc_urls()
+    data = collect_data(url_list)
+    process(data)
+					</code></pre>
+                    Asyncio event loop could be used instead thread pool in many
+                    IO heavy tasks. For instance scraping  or fast upload to S3.
+                </section>
 					</code></pre>
 				</section>
 
