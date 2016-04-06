@@ -404,6 +404,36 @@ def main():
                     Asyncio event loop could be used instead thread pool in many
                     IO heavy tasks. For instance scraping  or fast upload to S3.
                 </section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Sync Code is the Leader, Asyncio loop Has Own Thread</h3>
+					<pre><code class="hljs python" data-trim>
+import asyncio, functools
+from threading import Thread, Event
+
+class AioThread(Thread):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.loop = None
+        self.event = Event()
+
+    def run(self):
+        self._loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self._loop)
+        self._loop.call_soon(self.event.set)
+        self._loop.run_forever()
+
+    def add_task(self, coro):
+        fut = asyncio.call_soon_threadsafe(coro, loop=self._loop)
+        return fut
+
+    def finalize(self, timeout=None):
+        self._loop.call_soon_threadsafe(self._loop.stop)
+        self.join(timeout=timeout)
+					</code></pre>
+                    Simple way to spin event loop in separate thread.
+
+                </section>
 					</code></pre>
 				</section>
 
