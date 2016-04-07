@@ -457,6 +457,36 @@ def main()
         print('The coroutine returned: {!r}'.format(result))
 					</code></pre>
                 </section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Real world example: Cassandra python driver</h3>
+					<pre><code class="hljs python" data-trim>
+class TwistedConnection(Connection):
+
+    @classmethod
+    def initialize_reactor(cls):
+        cls._loop = TwistedLoop()
+
+    @classmethod
+    def create_timer(cls, timeout, callback):
+        timer = Timer(timeout, callback)
+        cls._loop.add_timer(timer)
+        return timer
+
+    def add_connection(self):
+        # ...
+    def client_connection_made(self):
+        # ...
+
+    def handle_read(self):
+        self.process_io_buffer()
+
+    def push(self, data):
+        reactor.callFromThread(self.connector.transport.write, data)
+					</code></pre>
+                    Cassandra's <a href="https://github.com/datastax/python-driver/blob/master/cassandra/io/twistedreactor.py">python driver</a>
+                    is sync but connection objects spin event loop, in this case twisted's reactor
+                </section>
 					</code></pre>
 				</section>
 
