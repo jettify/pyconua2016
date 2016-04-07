@@ -434,6 +434,29 @@ class AioThread(Thread):
                     Simple way to spin event loop in separate thread.
 
                 </section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Fetch results from event loop</h3>
+					<pre><code class="hljs python" data-trim>
+def main()
+    aiothread = AioThread()
+    aiothread.start()
+    aiothread.event.wait()
+
+    loop = aiothread.loop
+    coro = asyncio.sleep(1, loop=loop)
+    future = aiothread.add_task(coro)
+    try:
+        result = future.result(timeout)
+    except asyncio.TimeoutError:
+        print('The coroutine took too long, cancelling the task...')
+        future.cancel()
+    except Exception as exc:
+        print('The coroutine raised an exception: {!r}'.format(exc))
+    else:
+        print('The coroutine returned: {!r}'.format(result))
+					</code></pre>
+                </section>
 					</code></pre>
 				</section>
 
