@@ -406,6 +406,27 @@ def main():
                 </section>
 <!-- ####################################################################  -->
 				<section>
+                    <h3>Do not try this at home!</h3>
+					<pre><code class="hljs python" data-trim>
+from flask import Flask
+app = Flask(__name__)
+
+loop = asyncio.get_event_loop()
+redis = loop.run_until_complete(aioredis.create_redis(
+    ('localhost', 6379), loop=loop))
+
+@app.route("/")
+def hello():
+    value = loop.run_until_complete(redis.get('my-key'))
+    return "Hello {}!".format(value)
+
+if __name__ == "__main__":
+    app.run()
+					</code></pre>
+                    async code inside flask application.
+                </section>
+<!-- ####################################################################  -->
+				<section>
                     <h3>Sync Code is the Leader, Asyncio loop Has Own Thread</h3>
 					<pre><code class="hljs python" data-trim>
 import asyncio, functools
