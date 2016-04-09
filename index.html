@@ -487,11 +487,95 @@ class TwistedConnection(Connection):
                     Cassandra's <a href="https://github.com/datastax/python-driver/blob/master/cassandra/io/twistedreactor.py">python driver</a>
                     is sync but connection objects spin event loop, in this case twisted's reactor
                 </section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Advanced sync/async communication. Janus queue</h3>
+                    <p><img src="images/janus.jpg" height=450px></p>
+					<pre><code class="hljs python" data-trim>
+queue = janus.Queue(loop=loop)
+await queue.async_q.get()
+queue.sync_q.put(i)
 					</code></pre>
+				</section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Janus queue example</h3>
+					<pre><code class="hljs python" data-trim>
+import asyncio, janus
+
+loop = asyncio.get_event_loop()
+queue = janus.Queue(loop=loop)
+
+def threaded(sync_q):
+    for i in range(100):
+        sync_q.put(i)
+    sync_q.join()
+
+async def async_coro(async_q):
+    for i in range(100):
+        val = await async_q.get()
+        async_q.task_done()
+
+fut = loop.run_in_executor(None, threaded, queue.sync_q)
+loop.run_until_complete(async_coro(queue.async_q))
+loop.run_until_complete(fut)
+					</code></pre>
+                </section>
+<!-- ####################################################################  -->
+				<section>
+					<h3>Keep an eye on StopIteration in python 3.4</h3>
+					<pre><code class="hljs python" data-trim>
+@asyncio.coroutine
+def coro():
+    raise StopIteration('batman')
+
+@asyncio.coroutine
+def coro2():
+    i = iter(range(2))
+    next(i)
+    next(i)
+    next(i)  # raise StopIteration
+    return 'finish'
+
+@asyncio.coroutine
+def go():
+    data = yield from coro()  # batman
+    data = yield from coro2() # None
+					</code></pre>
+                    Fixed in python 3.5
+				</section>
+<!-- ####################################################################  -->
+				<section>
+					<h3>Missed coroutine decorators in python 3.4</h3>
+					<pre><code class="hljs python" data-trim>
+@asyncio.coroutine
+def foo(loop):
+    yield from asyncio.sleep(1, loop=loop)
+
+def bar(loop):
+    yield from asyncio.sleep(1, loop=loop)
+
+loop.run_until_complete(foo(loop))
+loop.run_until_complete(bar(loop))
+
+					</code></pre>
+                    Fixed in python 3.5 with await syntax
+				</section>
+<!-- ####################################################################  -->
+				<section>
+					<h3>Think 7 times before using task.cancel()</h3>
+					<pre><code class="hljs python" data-trim>
+async def foo(loop):
+    await update1()
+    await update2()
+
+task = loop.ensure_future(foo(loop))
+task.cancel()
+					</code></pre>
+                    Fixed in python 3.5 with await syntax
 				</section>
 
 <!-- ####################################################################  -->
-
 				<section style="text-align: left;" data-background="images/dr2.png" data-state="img-right">
 					<h1>THE END</h1>
 					<p>
