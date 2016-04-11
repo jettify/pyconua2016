@@ -317,7 +317,7 @@ class Foo:
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Asyncio Leader And Blocking Calls in ThreadPool</h3>
+                    <h3>Asyncio is in main thread. Blocking calls are in ThreadPool</h3>
 					<pre><code class="hljs python" data-trim>
 import asyncio
 from pyodbc import connect
@@ -333,6 +333,8 @@ async def test_example():
 
 loop.run_until_complete(test_example())
 					</code></pre>
+                    Easy to use but a bit strange interface,
+                    default executor has 4 worker threads.
 
                 </section>
 <!-- ####################################################################  -->
