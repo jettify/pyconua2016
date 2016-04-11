@@ -423,7 +423,8 @@ def hello():
 if __name__ == "__main__":
     app.run()
 					</code></pre>
-                    async code inside flask application.
+                    Using coroutines insde sync code is not always good idea.
+                    In this particular case it slows down database access.
                 </section>
 <!-- ####################################################################  -->
 				<section>
