@@ -140,9 +140,11 @@ async def my_view(request):
                     <h3>TIP: Use Explicit Event Loop</h3>
 					<pre><code class="hljs python" data-trim>
 import asyncio
+
 async def go(loop):
     future = asyncio.Future(loop=loop)
     future.set_result(None)
+
     await asyncio.sleep(3.0, loop=loop)
     await future
     print("foo")
@@ -151,6 +153,7 @@ loop = asyncio.get_event_loop()
 loop.run_until_complete(go(loop))
 loop.close()
 					</code></pre>
+                    <code>loop</code> argument is required for most asyncio APIs.
 				</section>
 <!-- ####################################################################  -->
 				<section>
@@ -165,13 +168,12 @@ loop.close()
 				<section>
                     <h3>Convenience of explicit loop</h3>
                     <ul>
-                        <li>Increase testability (Hello Twisted!)</li>
+                        <li>Increase of testability (Hello Twisted!)</li>
                         <li>Fast access to bunch of useful methods: <code>run_in_executor,
                                 create_subprocess_exec, create_task </code></li>
-                        <li>Easier to reason code when you have nonstandard case like: two
+                        <li>Easier to reason about code when you have nonstandard case like: two
                             threads two event loops, or main thread is sync second is async</li>
                     </ul>
-
 				</section>
 <!-- ####################################################################  -->
 				<section>
@@ -197,11 +199,12 @@ loop = asyncio.get_event_loop()
 loop.add_signal_handler(signal.SIGTERM, signal_handler, loop)
 loop.run_until_complete(do_work(loop))
 					</code></pre>
-Asyncio will warn you with bunch of tracebacks if you do not do proper shutdown
+                    <code>asyncio</code> will warn you with bunch of tracebacks
+                    if you do not do proper shutdown.
 				</section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Graceful Shutdown aiohttp Edition </h3>
+                    <h3>Graceful shutdown aiohttp edition </h3>
                     <pre><code class="hljs python" data-trim>
 
 loop = asyncio.get_event_loop()
