@@ -268,8 +268,8 @@ loop.run_until_complete(go(loop))
 				</section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Be a good citizen and shutdown connection pools
-                        explicitly in your aiohttp server</h3>
+                    <h3>Be a good citizen! Shutdown db connection pools
+                        in your aiohttp app</h3>
 					<pre><code class="hljs python" data-trim>
 async def init(loop):
     # setup application and extensions
@@ -285,6 +285,9 @@ async def init(loop):
     app.on_cleanup.append(close_pg)
     # ...
 					</code></pre>
+                    <code>aiohttp</code> has handy signal <b>on_cleanup</b> for
+                    database connections, as well as <b>on_shutdown</b> for
+                    websockets
 				</section>
 
 <!-- ####################################################################  -->
