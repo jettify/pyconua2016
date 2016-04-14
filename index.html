@@ -296,17 +296,23 @@ async def init(loop):
 					<pre><code class="hljs python" data-trim>
 class Foo:
     def __init__(self):
-        self._reader_task = asyncio.create_task(
-            self._read_data(), loop=self._loop)
+        self._task = asyncio.create_task(self._do_task(), loop=self._loop)
 
-    async def _stop_reader(self):
-        self._reader_task.cancel()
+    async def _do_task():
+        await self.set('foo', 'bar')
+        await self.set('baz', 'zap')
+
+    async def _stop_do_task(self):
+        self._task.cancel()
 
         try:
-            await self._reader_task
+            await self._task
         except asyncio.CanceledError:
             pass
 					</code></pre>
+                    Could be very tricky! Make sure you do not leave inconsistent
+                    state since <code>CanceledError</code> may occur at any
+                    <code>await/yield from</code>
 				</section>
 
 <!-- ####################################################################  -->
