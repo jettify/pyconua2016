@@ -116,7 +116,7 @@ def my_view(request):
     r = requests.get('http://graph.facebook.com/v2.5/{uid}')
     data = r.json()
     # ...
-    return HttpResponse(status=201)
+    return HttpResponse(status=200)
 
 # --------------------------------------
 
@@ -126,7 +126,7 @@ async def my_view(request):
     # context switch here
     r = await session.get('http://graph.facebook.com/v2.5/{uid}')
     data = await r.json()
-    return web.Response(status=201)
+    return web.Response(status=200)
                     </code></pre>
                     Amazon S3 API could return response in over 9000s!
 				</section>
@@ -196,7 +196,8 @@ def is_prime(n):
     return True
 
 async def go():
-    result = await loop.run_in_executor(executor, is_prime, 112272535095293)
+    result = await loop.run_in_executor(
+        executor, is_prime, 112272535095293)
 loop.run_until_complete(go(loop, executor))
 
 					</code></pre>
@@ -235,12 +236,13 @@ def collect_data(url_list):
     session = aiohttp.ClientSession(loop=loop)
     coros = [fetch(sessiong, u, loop) for u in url_list]
 
-    loop.run_until_complete(asyncio.gather(*coros, loop=loop))
+    data = loop.run_until_complete(asyncio.gather(*coros, loop=loop))
     loop.run_until_complete(session.close())
     loop.close()
+    return data
 
 def main():
-    url_list = db.fethc_urls()
+    url_list = db.fetch_urls()
     data = collect_data(url_list)
     process(data)
 					</code></pre>
@@ -339,12 +341,7 @@ class TwistedConnection(Connection):
     def initialize_reactor(cls):
         cls._loop = TwistedLoop()
 
-    @classmethod
-    def create_timer(cls, timeout, callback):
         timer = Timer(timeout, callback)
-        cls._loop.add_timer(timer)
-        return timer
-
     def add_connection(self):
         # ...
     def client_connection_made(self):
