@@ -82,8 +82,8 @@
 				<section>
 					<h3>Agenda</h3>
                     <ul>
-                        <li>Motivation why to use async/asyncio at all</li>
-                        <li>Asyncio Execution Modes</li>
+                        <li>Motivation, why asyncio and asynchronous programming</li>
+                        <li>Asyncio event loop</li>
                         <li>Asyncio tips and tricks</li>
                         <li>Asyncio pitfalls</li>
                     </ul>
@@ -130,6 +130,269 @@ async def my_view(request):
                     </code></pre>
                     Amazon S3 API could return response in over 9000s!
 				</section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Asyncio Application Execution Models</h3>
+                    <ul>
+                        <li>Event loop spins in <b>main</b> thread, it schedules blocking tasks using
+                            thread pool, blocking tasks is quite "short".</li>
+                        <li>Embedded event loop, <b>main</b> thread gives control to the event loop
+                            for finite amount of time, and then executes regular sync code.</li>
+                        <li>Sync code executed in <b>main</b> thead, but event loop spinning
+                            in separate thread.</li>
+                    </ul>
+                </section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Asyncio is in main thread</h3>
+                    <img src="images/asyncio_leader.svg" height="500px">
+                    <p>Most popular and convenient asyncio mode in the wild.</p>
+                </section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Asyncio is in main thread. Blocking calls are in ThreadPool</h3>
+					<pre><code class="hljs python" data-trim>
+import asyncio
+from pyodbc import connect
+
+loop = asyncio.get_event_loop()
+executor = ThreadPoolExecutor(max_workers=4)
+async def test_example():
+    dsn = 'Driver=SQLite;Database=sqlite.db'
+    conn = await loop.run_in_executor(executor, connect, dsn)
+    cursor = await loop.run_in_executor(executor, conn.cursor)
+    conn = await loop.run_in_executor(executor, cursor.execute,
+                                      'SELECT 42;')
+
+loop.run_until_complete(test_example())
+					</code></pre>
+                    Easy to use but a bit strange interface,
+                    default executor has 4 worker threads.
+
+                </section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>ThreadPool Notes</h3>
+                    <ul>
+                        <li>No way to kill thread if task stuck inside</li>
+                        <li>C extensions could consumer alot of virtual memory due to
+                        thread arena</li>
+                        <li>Convenient workaround for blocking calls</li>
+                    </ul>
+
+                </section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Asyncio Leader and blocking code in ProcessPool</h3>
+					<pre><code class="hljs python" data-trim>
+
+loop = asyncio.get_event_loop()
+executor = ProcessPoolExecutor(max_workers=3)
+
+def is_prime(n):
+    if n % 2 == 0: return False
+    sqrt_n = int(math.floor(math.sqrt(n)))
+    for i in range(3, sqrt_n + 1, 2): if n % i == 0: return False
+    return True
+
+async def go():
+    result = await loop.run_in_executor(executor, is_prime, 112272535095293)
+loop.run_until_complete(go(loop, executor))
+
+					</code></pre>
+                </section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>ProcessPool Notes</h3>
+                    <ul>
+                        <li>Easy to terminate</li>
+                        <li>Consumes a lot of memory</li>
+                        <li>Process should be create as soon as possible in order not to copy
+                            memory due to <code>fork()</code></li>
+                    </ul>
+
+                </section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Asyncio is in main thread</h3>
+                    <img src="images/loop_inside.svg" height="500px">
+                    <p>Application may spin event loop on will to perform
+                    IO heavy computations.</p>
+                </section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Sync Code is Leader, Embedded Asyncio loop</h3>
+					<pre><code class="hljs python" data-trim>
+import asyncio, aiohttp
+
+async def fetch(session, url, loop):
+    async with session.get(url) as resp:
+        data = await resp.text()
+
+def collect_data(url_list):
+    loop = asyncio.get_event_loop()
+
+    session = aiohttp.ClientSession(loop=loop)
+    coros = [fetch(sessiong, u, loop) for u in url_list]
+
+    loop.run_until_complete(asyncio.gather(*coros, loop=loop))
+    loop.run_until_complete(session.close())
+    loop.close()
+
+def main():
+    url_list = db.fethc_urls()
+    data = collect_data(url_list)
+    process(data)
+					</code></pre>
+                    Scraping  or concurrent upload to external server are most
+                    popular use cases.
+                </section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Do not try this at home!</h3>
+					<pre><code class="hljs python" data-trim>
+from flask import Flask
+app = Flask(__name__)
+
+loop = asyncio.get_event_loop()
+redis = loop.run_until_complete(aioredis.create_redis(
+    ('localhost', 6379), loop=loop))
+
+@app.route("/")
+def hello():
+    value = loop.run_until_complete(redis.get('my-key'))
+    return "Hello {}!".format(value)
+
+if __name__ == "__main__":
+    app.run()
+					</code></pre>
+                    Using coroutines inside sync code is not always good idea.
+                    In this particular case it slows down database access.
+                </section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Sync Code is the Leader, Asyncio loop Has Own Thread</h3>
+                    <img src="images/sync_leader.svg" height="500px">
+                    <p>Application may delegate IO heavy tasks for dedicated
+                    loop in separate thread.</p>
+                </section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Sync Code is the Leader, Asyncio loop Has Own Thread</h3>
+					<pre><code class="hljs python" data-trim>
+import asyncio, functools
+from threading import Thread, Event
+
+class AioThread(Thread):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.loop = None
+        self.event = Event()
+
+    def run(self):
+        self._loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self._loop)
+        self._loop.call_soon(self.event.set)
+        self._loop.run_forever()
+
+    def add_task(self, coro):
+        fut = asyncio.call_soon_threadsafe(coro, loop=self._loop)
+        return fut
+
+    def finalize(self, timeout=None):
+        self._loop.call_soon_threadsafe(self._loop.stop)
+        self.join(timeout=timeout)
+					</code></pre>
+                    Simple way to spin event loop in separate thread.
+
+                </section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Fetch results from event loop</h3>
+					<pre><code class="hljs python" data-trim>
+def main()
+    aiothread = AioThread()
+    aiothread.start()
+    aiothread.event.wait()
+
+    loop = aiothread.loop
+    coro = asyncio.sleep(1, loop=loop)
+    future = aiothread.add_task(coro)
+    try:
+        result = future.result(timeout)
+    except asyncio.TimeoutError:
+        print('The coroutine took too long, cancelling the task...')
+        future.cancel()
+    except Exception as exc:
+        print('The coroutine raised an exception: {!r}'.format(exc))
+    else:
+        print('The coroutine returned: {!r}'.format(result))
+					</code></pre>
+                </section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Real world example: Cassandra python driver</h3>
+					<pre><code class="hljs python" data-trim>
+class TwistedConnection(Connection):
+
+    @classmethod
+    def initialize_reactor(cls):
+        cls._loop = TwistedLoop()
+
+    @classmethod
+    def create_timer(cls, timeout, callback):
+        timer = Timer(timeout, callback)
+        cls._loop.add_timer(timer)
+        return timer
+
+    def add_connection(self):
+        # ...
+    def client_connection_made(self):
+        # ...
+
+    def handle_read(self):
+        self.process_io_buffer()
+
+    def push(self, data):
+        reactor.callFromThread(self.connector.transport.write, data)
+					</code></pre>
+                    Cassandra's <a href="https://github.com/datastax/python-driver/blob/master/cassandra/io/twistedreactor.py">python driver</a>
+                    is sync but connection objects spin event loop, in this case twisted's reactor
+                </section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Advanced sync/async communication. Janus queue</h3>
+                    <p><img src="images/janus.jpg" height=450px></p>
+					<pre><code class="hljs python" data-trim>
+queue = janus.Queue(loop=loop)
+await queue.async_q.get()
+queue.sync_q.put(i)
+					</code></pre>
+				</section>
+<!-- ####################################################################  -->
+				<section>
+                    <h3>Janus queue example</h3>
+					<pre><code class="hljs python" data-trim>
+import asyncio, janus
+
+loop = asyncio.get_event_loop()
+queue = janus.Queue(loop=loop)
+
+def threaded(sync_q):
+    for i in range(100):
+        sync_q.put(i)
+    sync_q.join()
+
+async def async_coro(async_q):
+    for i in range(100):
+        val = await async_q.get()
+        async_q.task_done()
+
+fut = loop.run_in_executor(None, threaded, queue.sync_q)
+loop.run_until_complete(async_coro(queue.async_q))
+loop.run_until_complete(fut)
+					</code></pre>
+                </section>
 <!-- ####################################################################  -->
 				<section>
                     <h3>Asyncio tips and tricks</h3>
@@ -295,269 +558,26 @@ async def init(loop):
                     <h3>Explicitly finalize background tasks</h3>
 					<pre><code class="hljs python" data-trim>
 class Foo:
+
     def __init__(self):
-        self._task = asyncio.create_task(self._do_task(), loop=self._loop)
+        self._task = asyncio.create_task(self._do_task(),
+        loop=self._loop)
 
     async def _do_task():
         await self.set('foo', 'bar')
         await self.set('baz', 'zap')
 
     async def _stop_do_task(self):
-        self._task.cancel()
-
-        try:
-            await self._task
-        except asyncio.CanceledError:
-            pass
+        await self._task
 					</code></pre>
-                    Could be very tricky! Make sure you do not leave inconsistent
-                    state since <code>CanceledError</code> may occur at any
-                    <code>await/yield from</code>
+                    May be very tricky! Same approach as thread finalization
+                    should be employed or <code>task.cancel()</code></section>
+<!-- ####################################################################  -->
+				<section>
+					<h3>Asyncio Pitsfalls</h3>
+                    <p><img src="images/train_fall.jpg" height=650px></p>
 				</section>
 
-<!-- ####################################################################  -->
-				<section>
-                    <h3>Asyncio Application Execution Models</h3>
-                    <ul>
-                        <li>Event loop spins in <b>main</b> thread, it schedules blocking tasks using
-                            thread pool, blocking tasks is quite "short".</li>
-                        <li>Embedded event loop, <b>main</b> thread gives control to the event loop
-                            for finite amount of time, and then executes regular sync code.</li>
-                        <li>Sync code executed in <b>main</b> thead, but event loop spinning
-                            in separate thread.</li>
-                    </ul>
-                </section>
-<!-- ####################################################################  -->
-				<section>
-                    <h3>Asyncio is in main thread. Blocking calls are in ThreadPool</h3>
-					<pre><code class="hljs python" data-trim>
-import asyncio
-from pyodbc import connect
-
-loop = asyncio.get_event_loop()
-executor = ThreadPoolExecutor(max_workers=4)
-async def test_example():
-    dsn = 'Driver=SQLite;Database=sqlite.db'
-    conn = await loop.run_in_executor(executor, connect, dsn)
-    cursor = await loop.run_in_executor(executor, conn.cursor)
-    conn = await loop.run_in_executor(executor, cursor.execute,
-                                      'SELECT 42;')
-
-loop.run_until_complete(test_example())
-					</code></pre>
-                    Easy to use but a bit strange interface,
-                    default executor has 4 worker threads.
-
-                </section>
-<!-- ####################################################################  -->
-				<section>
-                    <h3>ThreadPool Notes</h3>
-                    <ul>
-                        <li>No way to kill thread if task stuck inside</li>
-                        <li>C extensions could consumer alot of virtual memory due to
-                        thread arena</li>
-                        <li>Convenient workaround for blocking calls</li>
-                    </ul>
-
-                </section>
-<!-- ####################################################################  -->
-				<section>
-                    <h3>Asyncio Leader and blocking code in ProcessPool</h3>
-					<pre><code class="hljs python" data-trim>
-
-loop = asyncio.get_event_loop()
-executor = ProcessPoolExecutor(max_workers=3)
-
-def is_prime(n):
-    if n % 2 == 0: return False
-    sqrt_n = int(math.floor(math.sqrt(n)))
-    for i in range(3, sqrt_n + 1, 2): if n % i == 0: return False
-    return True
-
-async def go():
-    result = await loop.run_in_executor(executor, is_prime, 112272535095293)
-loop.run_until_complete(go(loop, executor))
-
-					</code></pre>
-                </section>
-<!-- ####################################################################  -->
-				<section>
-                    <h3>ProcessPool Notes</h3>
-                    <ul>
-                        <li>Easy to terminate</li>
-                        <li>Consumes a lot of memory</li>
-                        <li>Process should be create as soon as possible in order not to copy
-                            memory due to <code>fork()</code></li>
-                    </ul>
-
-                </section>
-<!-- ####################################################################  -->
-				<section>
-                    <h3>Sync Code is Leader, Embedded Asyncio loop</h3>
-					<pre><code class="hljs python" data-trim>
-import asyncio, aiohttp
-
-async def fetch(session, url, loop):
-    async with session.get(url) as resp:
-        data = await resp.text()
-
-def collect_data(url_list):
-    loop = asyncio.get_event_loop()
-
-    session = aiohttp.ClientSession(loop=loop)
-    coros = [fetch(sessiong, u, loop) for u in url_list]
-
-    loop.run_until_complete(asyncio.gather(*coros, loop=loop))
-    loop.run_until_complete(session.close())
-    loop.close()
-
-def main():
-    url_list = db.fethc_urls()
-    data = collect_data(url_list)
-    process(data)
-					</code></pre>
-                    Asyncio event loop could be used instead thread pool in many
-                    IO heavy tasks. For instance scraping  or fast upload to S3.
-                </section>
-<!-- ####################################################################  -->
-				<section>
-                    <h3>Do not try this at home!</h3>
-					<pre><code class="hljs python" data-trim>
-from flask import Flask
-app = Flask(__name__)
-
-loop = asyncio.get_event_loop()
-redis = loop.run_until_complete(aioredis.create_redis(
-    ('localhost', 6379), loop=loop))
-
-@app.route("/")
-def hello():
-    value = loop.run_until_complete(redis.get('my-key'))
-    return "Hello {}!".format(value)
-
-if __name__ == "__main__":
-    app.run()
-					</code></pre>
-                    Using coroutines insde sync code is not always good idea.
-                    In this particular case it slows down database access.
-                </section>
-<!-- ####################################################################  -->
-				<section>
-                    <h3>Sync Code is the Leader, Asyncio loop Has Own Thread</h3>
-					<pre><code class="hljs python" data-trim>
-import asyncio, functools
-from threading import Thread, Event
-
-class AioThread(Thread):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.loop = None
-        self.event = Event()
-
-    def run(self):
-        self._loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self._loop)
-        self._loop.call_soon(self.event.set)
-        self._loop.run_forever()
-
-    def add_task(self, coro):
-        fut = asyncio.call_soon_threadsafe(coro, loop=self._loop)
-        return fut
-
-    def finalize(self, timeout=None):
-        self._loop.call_soon_threadsafe(self._loop.stop)
-        self.join(timeout=timeout)
-					</code></pre>
-                    Simple way to spin event loop in separate thread.
-
-                </section>
-<!-- ####################################################################  -->
-				<section>
-                    <h3>Fetch results from event loop</h3>
-					<pre><code class="hljs python" data-trim>
-def main()
-    aiothread = AioThread()
-    aiothread.start()
-    aiothread.event.wait()
-
-    loop = aiothread.loop
-    coro = asyncio.sleep(1, loop=loop)
-    future = aiothread.add_task(coro)
-    try:
-        result = future.result(timeout)
-    except asyncio.TimeoutError:
-        print('The coroutine took too long, cancelling the task...')
-        future.cancel()
-    except Exception as exc:
-        print('The coroutine raised an exception: {!r}'.format(exc))
-    else:
-        print('The coroutine returned: {!r}'.format(result))
-					</code></pre>
-                </section>
-<!-- ####################################################################  -->
-				<section>
-                    <h3>Real world example: Cassandra python driver</h3>
-					<pre><code class="hljs python" data-trim>
-class TwistedConnection(Connection):
-
-    @classmethod
-    def initialize_reactor(cls):
-        cls._loop = TwistedLoop()
-
-    @classmethod
-    def create_timer(cls, timeout, callback):
-        timer = Timer(timeout, callback)
-        cls._loop.add_timer(timer)
-        return timer
-
-    def add_connection(self):
-        # ...
-    def client_connection_made(self):
-        # ...
-
-    def handle_read(self):
-        self.process_io_buffer()
-
-    def push(self, data):
-        reactor.callFromThread(self.connector.transport.write, data)
-					</code></pre>
-                    Cassandra's <a href="https://github.com/datastax/python-driver/blob/master/cassandra/io/twistedreactor.py">python driver</a>
-                    is sync but connection objects spin event loop, in this case twisted's reactor
-                </section>
-<!-- ####################################################################  -->
-				<section>
-                    <h3>Advanced sync/async communication. Janus queue</h3>
-                    <p><img src="images/janus.jpg" height=450px></p>
-					<pre><code class="hljs python" data-trim>
-queue = janus.Queue(loop=loop)
-await queue.async_q.get()
-queue.sync_q.put(i)
-					</code></pre>
-				</section>
-<!-- ####################################################################  -->
-				<section>
-                    <h3>Janus queue example</h3>
-					<pre><code class="hljs python" data-trim>
-import asyncio, janus
-
-loop = asyncio.get_event_loop()
-queue = janus.Queue(loop=loop)
-
-def threaded(sync_q):
-    for i in range(100):
-        sync_q.put(i)
-    sync_q.join()
-
-async def async_coro(async_q):
-    for i in range(100):
-        val = await async_q.get()
-        async_q.task_done()
-
-fut = loop.run_in_executor(None, threaded, queue.sync_q)
-loop.run_until_complete(async_coro(queue.async_q))
-loop.run_until_complete(fut)
-					</code></pre>
-                </section>
 <!-- ####################################################################  -->
 				<section>
 					<h3>Keep an eye on StopIteration in python 3.4</h3>
