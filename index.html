@@ -100,11 +100,11 @@
 				</section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Because we do SOA (<strike>microservices</strike>) this days...</h3>
+                    <h3>Also we do SOA (<strike>microservices</strike>) this days...</h3>
 
                     <p><img src="images/microservices.png" height=450px></p>
                     <p>SOA implies a lot of network communications.</p>
-                    <a href="https://www.tigerteam.dk/2014/microservices-its-not-only-the-size-that-matters-its-also-how-you-use-them-part-4/">image source</a>
+                    <!-- <a href="https://www.tigerteam.dk/2014/microservices-its-not-only-the-size-that-matters-its-also-how-you-use-them-part-4/">image source</a> -->
 				</section>
 <!-- ####################################################################  -->
 				<section>
@@ -132,13 +132,13 @@ async def my_view(request):
 				</section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Asyncio Application Execution Models</h3>
+                    <h3>Asyncio application design choices</h3>
                     <ul>
-                        <li>Event loop spins in <b>main</b> thread, it schedules blocking tasks using
-                            thread pool, blocking tasks is quite "short".</li>
+                        <li>Event loop are spins in <b>main</b> thread, it schedules blocking tasks using
+                            thread pool.</li>
                         <li>Embedded event loop, <b>main</b> thread gives control to the event loop
                             for finite amount of time, and then executes regular sync code.</li>
-                        <li>Sync code executed in <b>main</b> thead, but event loop spinning
+                        <li>Sync code executed in <b>main</b> thread, but event loop spinning
                             in separate thread.</li>
                     </ul>
                 </section>
@@ -183,7 +183,7 @@ loop.run_until_complete(test_example())
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Asyncio Leader and blocking code in ProcessPool</h3>
+                    <h3>Asyncio is in main thread. Blocking code in ProcessPool</h3>
 					<pre><code class="hljs python" data-trim>
 
 loop = asyncio.get_event_loop()
@@ -201,6 +201,8 @@ async def go():
 loop.run_until_complete(go(loop, executor))
 
 					</code></pre>
+                    <code>ProcessPoolExecutor</code> has same interface as
+                    <code>ThreadPoolExecutor</code>
                 </section>
 <!-- ####################################################################  -->
 				<section>
@@ -208,21 +210,22 @@ loop.run_until_complete(go(loop, executor))
                     <ul>
                         <li>Easy to terminate</li>
                         <li>Consumes a lot of memory</li>
-                        <li>Process should be create as soon as possible in order not to copy
-                            memory due to <code>fork()</code></li>
+                        <li>Process should be created and warmed as soon as
+                            possible in order not to copy memory due to
+                            <code>fork()</code></li>
                     </ul>
 
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Asyncio is in main thread</h3>
+                    <h3>Embedded Asyncio loop</h3>
                     <img src="images/loop_inside.svg" height="500px">
                     <p>Application may spin event loop on will to perform
                     IO heavy computations.</p>
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Sync Code is Leader, Embedded Asyncio loop</h3>
+                    <h3>Embedded Asyncio loop. Example</h3>
 					<pre><code class="hljs python" data-trim>
 import asyncio, aiohttp
 
@@ -273,14 +276,14 @@ if __name__ == "__main__":
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Sync Code is the Leader, Asyncio loop Has Own Thread</h3>
+                    <h3>Asyncio loop has own separate thread</h3>
                     <img src="images/sync_leader.svg" height="500px">
                     <p>Application may delegate IO heavy tasks for dedicated
                     loop in separate thread.</p>
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Sync Code is the Leader, Asyncio loop Has Own Thread</h3>
+                    <h3>Asyncio loop has own separate thread. Example</h3>
 					<pre><code class="hljs python" data-trim>
 import asyncio, functools
 from threading import Thread, Event
@@ -341,7 +344,6 @@ class TwistedConnection(Connection):
     def initialize_reactor(cls):
         cls._loop = TwistedLoop()
 
-        timer = Timer(timeout, callback)
     def add_connection(self):
         # ...
     def client_connection_made(self):
@@ -359,7 +361,7 @@ class TwistedConnection(Connection):
 <!-- ####################################################################  -->
 				<section>
                     <h3>Advanced sync/async communication. Janus queue</h3>
-                    <p><img src="images/janus.jpg" height=450px></p>
+                    <p><img src="images/janus.jpg" height=400px></p>
 					<pre><code class="hljs python" data-trim>
 queue = janus.Queue(loop=loop)
 await queue.async_q.get()
@@ -389,6 +391,8 @@ fut = loop.run_in_executor(None, threaded, queue.sync_q)
 loop.run_until_complete(async_coro(queue.async_q))
 loop.run_until_complete(fut)
 					</code></pre>
+                    <code>janus</code> has two APIs for same queue: sync like
+                    <code>queue.Queue</code> and async like <code>asyncio.Queue</code>
                 </section>
 <!-- ####################################################################  -->
 				<section>
