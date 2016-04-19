@@ -80,7 +80,7 @@
 				</section>
 <!-- ####################################################################  -->
 				<section>
-					<h3>Agenda</h3>
+					<h6>Agenda</h6>
                     <ol>
                         <li>Motivation, why asyncio and asynchronous programming</li>
                         <li>Asyncio application design choices</li>
@@ -90,7 +90,7 @@
 				</section>
 <!-- ####################################################################  -->
 				<section>
-					<h3>Motivation. Why you might want to write asynchronous code?</h3>
+					<h6>Motivation. Why you might want to write asynchronous code?</h6>
                     <ul>
                         <li>Bunch of shiny new frameworks</li>
                         <li>Idle protocols (websockets) work out of box</li>
@@ -100,7 +100,7 @@
 				</section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Also we do SOA (<strike>microservices</strike>) this days...</h3>
+                    <h6>Also we do SOA (<strike>microservices</strike>) this days...</h6>
 
                     <p><img src="images/microservices.png" height=450px></p>
                     <p>SOA implies a lot of network communications.</p>
@@ -108,7 +108,7 @@
 				</section>
 <!-- ####################################################################  -->
 				<section>
-					<h3>Sync does not scale (TM)</h3>
+					<h6>Sync does not scale (TM)</h6>
                     <pre><code class="hljs python" data-trim>
 from django.http import HttpResponse
 def my_view(request):
@@ -132,7 +132,7 @@ async def my_view(request):
 				</section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Asyncio application design choices</h3>
+                    <h6>Asyncio application design choices</h6>
                     <ul>
                         <li>Event loop are spins in <b>main</b> thread, it schedules blocking tasks using
                             thread pool.</li>
@@ -144,13 +144,13 @@ async def my_view(request):
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Asyncio is in main thread</h3>
+                    <h6>Asyncio is in main thread</h6>
                     <img src="images/asyncio_leader.svg" height="500px">
                     <p>Most popular and convenient asyncio mode in the wild.</p>
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Asyncio is in main thread. Blocking calls are in ThreadPool</h3>
+                    <h6>Asyncio is in main thread. Blocking calls are in ThreadPool</h6>
 					<pre><code class="hljs python" data-trim>
 import asyncio
 from pyodbc import connect
@@ -172,7 +172,7 @@ loop.run_until_complete(test_example())
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>ThreadPool Notes</h3>
+                    <h6>ThreadPool Notes</h6>
                     <ul>
                         <li>No way to kill thread if task stuck inside</li>
                         <li>C extensions could consumer alot of virtual memory due to
@@ -183,7 +183,7 @@ loop.run_until_complete(test_example())
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Asyncio is in main thread. Blocking code in ProcessPool</h3>
+                    <h6>Asyncio is in main thread. Blocking code in ProcessPool</h6>
 					<pre><code class="hljs python" data-trim>
 
 loop = asyncio.get_event_loop()
@@ -206,7 +206,7 @@ loop.run_until_complete(go(loop, executor))
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>ProcessPool Notes</h3>
+                    <h6>ProcessPool Notes</h6>
                     <ul>
                         <li>Easy to terminate</li>
                         <li>Consumes a lot of memory</li>
@@ -218,14 +218,14 @@ loop.run_until_complete(go(loop, executor))
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Embedded Asyncio loop</h3>
+                    <h6>Embedded Asyncio loop</h6>
                     <img src="images/loop_inside.svg" height="500px">
                     <p>Application may spin event loop on will to perform
                     IO heavy computations.</p>
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Embedded Asyncio loop. Example</h3>
+                    <h6>Embedded Asyncio loop. Example</h6>
 					<pre><code class="hljs python" data-trim>
 import asyncio, aiohttp
 
@@ -254,7 +254,7 @@ def main():
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Do not try this at home!</h3>
+                    <h6>Do not try this at home!</h6>
 					<pre><code class="hljs python" data-trim>
 from flask import Flask
 app = Flask(__name__)
@@ -276,14 +276,14 @@ if __name__ == "__main__":
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Asyncio loop has own separate thread</h3>
+                    <h6>Asyncio loop has own separate thread</h6>
                     <img src="images/sync_leader.svg" height="500px">
                     <p>Application may delegate IO heavy tasks for dedicated
                     loop in separate thread.</p>
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Asyncio loop has own separate thread. Example</h3>
+                    <h6>Asyncio loop has own separate thread. Example</h6>
 					<pre><code class="hljs python" data-trim>
 import asyncio, functools
 from threading import Thread, Event
@@ -313,7 +313,7 @@ class AioThread(Thread):
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Fetch results from event loop</h3>
+                    <h6>Fetch results from event loop</h6>
 					<pre><code class="hljs python" data-trim>
 def main()
     aiothread = AioThread()
@@ -336,7 +336,7 @@ def main()
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Real world example: Cassandra python driver</h3>
+                    <h6>Real world example: Cassandra python driver</h6>
 					<pre><code class="hljs python" data-trim>
 class TwistedConnection(Connection):
 
@@ -360,7 +360,7 @@ class TwistedConnection(Connection):
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Advanced sync/async communication. Janus queue</h3>
+                    <h6>Advanced sync/async communication. Janus queue</h6>
                     <p><img src="images/janus.jpg" height=400px></p>
 					<pre><code class="hljs python" data-trim>
 queue = janus.Queue(loop=loop)
@@ -370,7 +370,7 @@ queue.sync_q.put(i)
 				</section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Janus queue example</h3>
+                    <h6>Janus queue example</h6>
 					<pre><code class="hljs python" data-trim>
 import asyncio, janus
 
@@ -396,12 +396,12 @@ loop.run_until_complete(fut)
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Asyncio tips and tricks</h3>
+                    <h6>Asyncio tips and tricks</h6>
                     <img src="images/funny.jpg" height="600px">
 				</section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>TIP: Use Explicit Event Loop</h3>
+                    <h6>TIP: Use Explicit Event Loop</h6>
 					<pre><code class="hljs python" data-trim>
 import asyncio
 
@@ -421,7 +421,7 @@ loop.close()
 				</section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Glyph on global event loop</h3>
+                    <h6>Glyph on global event loop</h6>
                     <blockquote>
                         <p>It would really be a pity if Tulip repeated our billion-dollar mistake [global reactor] ;-)</p>
                         <footer>--Glyph Lefkowitz / author of Twisted</footer>
@@ -430,7 +430,7 @@ loop.close()
 				</section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Convenience of explicit loop</h3>
+                    <h6>Convenience of explicit loop</h6>
                     <ul>
                         <li>Increase of testability (Hello Twisted!)</li>
                         <li>Fast access to bunch of useful methods: <code>run_in_executor,
@@ -441,12 +441,12 @@ loop.close()
 				</section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>TIP: Think about graceful shutdown early</h3>
+                    <h6>TIP: Think about graceful shutdown early</h6>
                     <p><img src="images/kill-9-1.jpg"></p>
 				</section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Asyncio graceful shutdown</h3>
+                    <h6>Asyncio graceful shutdown</h6>
 					<pre><code class="hljs python" data-trim>
 import asyncio, signal
 
@@ -468,7 +468,7 @@ loop.run_until_complete(do_work(loop))
 				</section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Graceful shutdown aiohttp edition </h3>
+                    <h6>Graceful shutdown aiohttp edition </h6>
                     <pre><code class="hljs python" data-trim>
 
 loop = asyncio.get_event_loop()
@@ -498,8 +498,8 @@ loop.close()
 				</section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>TIP: Think About Resource Lifetime to Avoid Resource
-                        (Socketes) Leak</h3>
+                    <h6>TIP: Think About Resource Lifetime to Avoid Resource
+                        (Socketes) Leak</h6>
                     <p><img src="images/sockets.jpg" height="400px"></p>
                     Good candidates for extra care:
                     <ul>
@@ -510,7 +510,7 @@ loop.close()
 				</section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Make sure all responses has been released</h3>
+                    <h6>Make sure all responses has been released</h6>
                     <code>aiohttp.ClientSession</code> is your friend
 					<pre><code class="hljs python" data-trim>
 import asyncio
@@ -532,8 +532,8 @@ loop.run_until_complete(go(loop))
 				</section>
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Be a good citizen! Shutdown db connection pools
-                        in your aiohttp app</h3>
+                    <h6>Be a good citizen! Shutdown db connection pools
+                        in your aiohttp app</h6>
 					<pre><code class="hljs python" data-trim>
 async def init(loop):
     # setup application and extensions
@@ -556,7 +556,7 @@ async def init(loop):
 
 <!-- ####################################################################  -->
 				<section>
-                    <h3>Explicitly finalize background tasks</h3>
+                    <h6>Explicitly finalize background tasks</h6>
 					<pre><code class="hljs python" data-trim>
 class Foo:
 
@@ -575,13 +575,13 @@ class Foo:
                     should be employed or <code>task.cancel()</code></section>
 <!-- ####################################################################  -->
 				<section>
-					<h3>Asyncio Pitsfalls</h3>
+					<h6>Asyncio Pitsfalls</h6>
                     <p><img src="images/train_fall.jpg" height=650px></p>
 				</section>
 
 <!-- ####################################################################  -->
 				<section>
-					<h3>Keep an eye on StopIteration in python 3.4</h3>
+					<h6>Keep an eye on StopIteration in python 3.4</h6>
 					<pre><code class="hljs python" data-trim>
 @asyncio.coroutine
 def coro():
@@ -604,7 +604,7 @@ def go():
 				</section>
 <!-- ####################################################################  -->
 				<section>
-					<h3>Missed coroutine decorators in python 3.4</h3>
+					<h6>Missed coroutine decorators in python 3.4</h3>
 					<pre><code class="hljs python" data-trim>
 @asyncio.coroutine
 def foo(loop):
@@ -621,7 +621,7 @@ loop.run_until_complete(bar(loop))
 				</section>
 <!-- ####################################################################  -->
 				<section>
-					<h3>Think 7 times before using task.cancel()</h3>
+					<h6>Think 7 times before using task.cancel()</h6>
 					<pre><code class="hljs python" data-trim>
 async def foo(loop):
     await update1()
