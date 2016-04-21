@@ -126,7 +126,8 @@ async def my_view(request):
     data = await r.json()
     return web.Response(status=200)
                     </code></pre>
-                    Amazon S3 API could return response in over 9000s!
+                    Amazon S3 API could return response in over 9000s! In async case
+                    only one response blocked, in sync - entire thread.
 				</section>
 <!-- ####################################################################  -->
 				<section>
@@ -218,7 +219,7 @@ loop.run_until_complete(go(loop, executor))
 				<section>
                     <h6>Embedded Asyncio loop</h6>
                     <img src="images/loop_inside.svg" height="500px">
-                    <p>Application may spin event loop on will to perform
+                    <p>Application may spin event loop at will, to perform
                     IO heavy computations.</p>
                 </section>
 <!-- ####################################################################  -->
@@ -254,6 +255,7 @@ def main():
 				<section>
                     <h6>Do not try this at home!</h6>
 					<pre><code class="hljs python" data-trim>
+import aioredis
 from flask import Flask
 app = Flask(__name__)
 
@@ -276,7 +278,7 @@ if __name__ == "__main__":
 				<section>
                     <h6>Asyncio loop has own separate thread</h6>
                     <img src="images/sync_leader.svg" height="500px">
-                    <p>Application may delegate IO heavy tasks for dedicated
+                    <p>Application may delegate IO heavy tasks to dedicated
                     loop in separate thread.</p>
                 </section>
 <!-- ####################################################################  -->
@@ -293,27 +295,27 @@ class AioThread(Thread):
         self.event = Event()
 
     def run(self):
-        self._loop = asyncio.new_event_loop()
+        self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)
-        self._loop.call_soon(self.event.set)
-        self._loop.run_forever()
+        self.loop.call_soon(self.event.set)
+        self.loop.run_forever()
 
     def add_task(self, coro):
-        fut = asyncio.call_soon_threadsafe(coro, loop=self._loop)
+        fut = asyncio.run_coroutine_threadsafe(coro, loop=self.loop)
         return fut
 
     def finalize(self, timeout=None):
         self._loop.call_soon_threadsafe(self._loop.stop)
         self.join(timeout=timeout)
 					</code></pre>
-                    Simple way to spin event loop in separate thread.
-
+                    Make sure you have means to signal that loop has been
+                    started, and you can finalize thread properly
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h6>Fetch results from event loop</h6>
+                    <h6>Communication with background event loop</h6>
 					<pre><code class="hljs python" data-trim>
-def main()
+def main():
     aiothread = AioThread()
     aiothread.start()
     aiothread.event.wait()
@@ -324,13 +326,16 @@ def main()
     try:
         result = future.result(timeout)
     except asyncio.TimeoutError:
-        print('The coroutine took too long, cancelling the task...')
+        print('The coroutine took too long, cancelling the task')
         future.cancel()
     except Exception as exc:
         print('The coroutine raised an exception: {!r}'.format(exc))
-    else:
-        print('The coroutine returned: {!r}'.format(result))
 					</code></pre>
+                    <ul>
+                    <li>Make sure you wait for loop to start.</li>
+                    <li>Calling <code>future.cancel()</code> in main thread
+                        will cancel asyncio coroutine in background thread.</li>
+                    </ul>
                 </section>
 <!-- ####################################################################  -->
 				<section>
@@ -358,7 +363,7 @@ class TwistedConnection(Connection):
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h6>Advanced sync/async communication. Janus queue</h6>
+                    <h6>Bidirectional sync/async communication. Janus queue</h6>
                     <p><img src="images/janus.jpg" height=400px></p>
 					<pre><code class="hljs python" data-trim>
 queue = janus.Queue(loop=loop)
