@@ -173,10 +173,14 @@ loop.run_until_complete(test_example())
 				<section>
                     <h6>ThreadPool Notes</h6>
                     <ul>
-                        <li>No way to kill thread if task stuck inside</li>
-                        <li>C extensions could consumer alot of virtual memory due to
-                        thread arena</li>
                         <li>Convenient workaround for blocking calls</li>
+                        <li>No way to kill thread if task stuck inside</li>
+                        <li>C extensions could consumer a lot of virtual
+                            memory due to thread arenas, may cause problems
+                            with docker/yarn</li>
+                        <li>Pool size in most cases should be proportional to
+                            number of cores of machine that hosts resource
+                            with blocking client</li>
                     </ul>
 
                 </section>
@@ -291,8 +295,7 @@ from threading import Thread, Event
 class AioThread(Thread):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.loop = None
-        self.event = Event()
+        self.loop, self.event = None, Event()
 
     def run(self):
         self.loop = asyncio.new_event_loop()
@@ -303,10 +306,9 @@ class AioThread(Thread):
     def add_task(self, coro):
         fut = asyncio.run_coroutine_threadsafe(coro, loop=self.loop)
         return fut
-
-    def finalize(self, timeout=None):
+    def finalize(self):
         self._loop.call_soon_threadsafe(self._loop.stop)
-        self.join(timeout=timeout)
+        self.join()
 					</code></pre>
                     Make sure you have means to signal that loop has been
                     started, and you can finalize thread properly
@@ -474,25 +476,23 @@ loop.run_until_complete(do_work(loop))
                     <h6>Graceful shutdown aiohttp edition </h6>
                     <pre><code class="hljs python" data-trim>
 
-loop = asyncio.get_event_loop()
-handler = app.make_handler()
-f = loop.create_server(handler, '0.0.0.0', 8080)
-srv = loop.run_until_complete(f)
-
-def shutdown(loop)
+def shutdown(loop):
     loop.remove_signal_handler(signal.SIGTERM)
     loop.stop()
 
 loop.add_signal_handler(signal.SIGTERM, shutdown, loop)
 
+handler = app.make_handler()
+f = loop.create_server(handler, '0.0.0.0', 8080)
+srv = loop.run_until_complete(f)
+
 loop.run_forever()
 
-srv.close()  # finish socket listening
+# kill accepting sockets
+srv.close()
 loop.run_until_complete(srv.wait_closed())
 
-loop.run_until_complete(app.shutdown())  # close websockets
 loop.run_until_complete(handler.finish_connections(60.0))
-loop.run_until_complete(app.cleanup())  # doc registered cleanups
 loop.close()
                     </code></pre>
                     Now you can be sure that all requests are safe and served
@@ -501,12 +501,12 @@ loop.close()
 				</section>
 <!-- ####################################################################  -->
 				<section>
-                    <h6>TIP: Think About Resource Lifetime to Avoid Resource
-                        (Socketes) Leak</h6>
+                    <h6>TIP: Think about resource lifetime to avoid resources
+                        (Sockets) Leak</h6>
                     <p><img src="images/sockets.jpg" height="400px"></p>
                     Good candidates for extra care:
                     <ul>
-                        <li>Any rest calls to external services</li>
+                        <li>Any REST calls to external services</li>
                         <li>Any reconnection logic</li>
                     </ul>
 
@@ -579,7 +579,7 @@ class Foo:
 <!-- ####################################################################  -->
 				<section>
 					<h6>Asyncio Pitsfalls</h6>
-                    <p><img src="images/train_fall.jpg" height=650px></p>
+                    <p><img src="images/train_fall.jpg" height=550px></p>
 				</section>
 
 <!-- ####################################################################  -->
@@ -603,37 +603,46 @@ def go():
     data = yield from coro()  # batman
     data = yield from coro2() # None
 					</code></pre>
-                    Fixed in python 3.5
+                    Raising <code>StopIteration</code> is same as returning
+                    from coroutine, so this could lead to hard of find bugs.
 				</section>
 <!-- ####################################################################  -->
 				<section>
 					<h6>Missed coroutine decorators in python 3.4</h3>
 					<pre><code class="hljs python" data-trim>
-@asyncio.coroutine
 def foo(loop):
     yield from asyncio.sleep(1, loop=loop)
 
+@asyncio.coroutine
 def bar(loop):
     yield from asyncio.sleep(1, loop=loop)
 
+async def zap(loop):
+    await asyncio.sleep(1, loop=loop)
+
 loop.run_until_complete(foo(loop))
 loop.run_until_complete(bar(loop))
+loop.run_until_complete(zap(loop))
 
 					</code></pre>
-                    Fixed in python 3.5 with await syntax
+                    All three examples work as expeted, but asyncio will not track
+                    first generator as coroutine as result will NOT complain
+                    if you forget to yield it.
 				</section>
 <!-- ####################################################################  -->
 				<section>
 					<h6>Think 7 times before using task.cancel()</h6>
 					<pre><code class="hljs python" data-trim>
-async def foo(loop):
-    await update1()
-    await update2()
+async def foo(redis, loop):
+    await asyncio.sleep(1, loop=loop)
+    await redis.set("foo", "bar")
+    await redis.set("baz", "zap")
 
 task = loop.ensure_future(foo(loop))
 task.cancel()
 					</code></pre>
-                    Fixed in python 3.5 with await syntax
+                    Canceling occurs on <code>yield from/await</code> points,
+                    and may leave data structures in inconsistent state.
 				</section>
 
 <!-- ####################################################################  -->
