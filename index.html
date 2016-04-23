@@ -49,6 +49,12 @@
 					<h3>Building Apps With Asyncio</h3>
 					<p> Nikolay Novik</p>
 					<p>PyConUA 2016</p>
+                    <aside class="notes">
+                    Добрый день меня зовут НН,  сегодня, я хотел бы затронуть тему об 
+                    1) основных подходах к построению асинхронных приложений
+                    2) способы взаимодействия синхронного и асинхронного кода
+                    3) и на последок, пройдемся по распространенным ошибка в асинхронном коде
+                    </aside>
 			   </section>
 <!-- ####################################################################  -->
 				<section id="aobut_me">
@@ -66,6 +72,11 @@
                             </ul>
                         </li>
                     </ul>
+                    <aside class="notes">
+                        Я инженер в компании ДР в команде загрузки и предварительной
+                        обработки данных. Написал нескольк библиотека для asyncio,
+                        клиенты к БД и разный поделки для aiohttp
+                    </aside>
 				</section>
 <!-- ####################################################################  -->
 				<section id="poll"> <h5> Poll: you and asyncio</h5>
@@ -75,26 +86,45 @@
                         <li>I am using Twisted, Tornado, gevent etc. extensively</li>
                         <li>I think async programming is kinda cool</li>
                     </ol>
+                    <aside class="notes">
+                        Теперь мне бы хотелось познакомится с аудиторией
+
+                    </aside>
 				</section>
 <!-- ####################################################################  -->
 				<section>
 					<h6>Agenda</h6>
                     <ol>
-                        <li>Motivation, why asyncio and asynchronous programming</li>
+                        <li>Motivation, what problem does asynchronous programming solve?</li>
                         <li>Asyncio application design choices</li>
                         <li>Tips and tricks and things to consider in your app</li>
                         <li>Asyncio pitfalls</li>
                     </ol>
+                    <aside class="notes">
+                        План у нас такой
+                        1) рассмотрим какую же проблемы решают асинхронные приложения
+                        2) Пройдемся по наиболие популярным подходам к построение асинхронных приложений
+                        3) Разберем разные подводные камни и лучшие практики в асинхронных приложениях:w
+                    </aside>
 				</section>
 <!-- ####################################################################  -->
 				<section>
-					<h6>Motivation. Why you might want to write asynchronous code?</h6>
+					<h6>Motivation. Why we might want to write asynchronous code?</h6>
                     <ul>
                         <li>One can do useful work instead of blocking</li>
                         <li>Idle protocols (websockets) work out of box</li>
                         <li>Encourage good development practices</li>
                         <li>Bunch of shiny new frameworks</li>
                     </ul>
+                    <aside class="notes">
+                        Какую же проблему решает асинхронный код? Все очень просто
+                        1) Первое и самое главное, неплохо бы делать больше полезных дел вместо того что бы ждать ответа из сети
+                        2) web socket работают из коробки
+                        3) asyncio много ругается, чем поощряет программиста писать надежный код
+                        4) Ну и если вы смогли убедить вашего ПМ, что нужно использовать asyncio, можно еще
+                        поработать над недостающими библиотеками в рабочее время, кому не
+                        хочется попилить опен сорс за счет компании))
+                    </aside>
 				</section>
 <!-- ####################################################################  -->
 				<section>
@@ -103,6 +133,11 @@
                     <p><img src="images/microservices.png" height=450px></p>
                     <p>SOA implies a lot of network communications.</p>
                     <!-- <a href="https://www.tigerteam.dk/2014/microservices-its-not-only-the-size-that-matters-its-also-how-you-use-them-part-4/">image source</a> -->
+                    <aside class="notes">
+                        Еще одна не мало важная причина это, то что нынче  мы разрабатываем
+                        больше сервисные системы, которые подразумевают много сетевого
+                        взаимодействия. Представим ОПИСАНИЕ ПО КАРТИНКЕ
+                    </aside>
 				</section>
 <!-- ####################################################################  -->
 				<section>
@@ -111,7 +146,7 @@
 from django.http import HttpResponse
 def my_view(request):
     # blocks thread
-    r = requests.get('http://graph.facebook.com/v2.5/{uid}')
+    r = requests.get('https://s3-us-west-2.amazonaws.com/dataintake/{uid}')
     data = r.json()
     # ...
     return HttpResponse(status=200)
@@ -122,12 +157,16 @@ from aiohttp import web
 async def my_view(request):
     session = request.app['session']
     # context switch here
-    r = await session.get('http://graph.facebook.com/v2.5/{uid}')
+    r = await session.get('https://s3-us-west-2.amazonaws.com/dataintake/{uid}')
     data = await r.json()
     return web.Response(status=200)
                     </code></pre>
                     Amazon S3 API could return response in over 9000s! In async case
                     only one response blocked, in sync - entire thread.
+                    <aside class="notes">
+                        Синхронный и асинхронный код не шибко отличается, например
+                        на первом кусочке кода dango view
+                    </aside>
 				</section>
 <!-- ####################################################################  -->
 				<section>
@@ -140,12 +179,23 @@ async def my_view(request):
                         <li>Sync code executed in <b>main</b> thread, but event loop spinning
                             in separate thread.</li>
                     </ul>
+                    <aside class="notes">
+                        И так, основные способы построения асинхронного и синхронного приложения, можно разделить условно на 3 группы
+                        1) ивент луп крутится в основном потоке, синхронный код в фоновых потокаэ
+                        2) ивент луп встраивается в синхронное приложение, запускается на конечный промежуток времени
+                        3) ивент луп запускается в фоновом потоке
+                    </aside>
                 </section>
 <!-- ####################################################################  -->
 				<section>
                     <h6>Asyncio is in main thread</h6>
                     <img src="images/asyncio_leader.svg" height="500px">
                     <p>Most popular and convenient asyncio mode in the wild.</p>
+                    <aside class="notes">
+                        Самый популярный способ запуска, 80% приложение следуют 
+                        этому подходу. 
+                        Асинхронная природа ивент лупа позволяет удобно создавать код который управляет всяким долгоиграющими опера
+                    </aside>
                 </section>
 <!-- ####################################################################  -->
 				<section>
@@ -168,10 +218,16 @@ loop.run_until_complete(test_example())
                     Easy to use but a bit strange interface,
                     default executor has 4 worker threads.
 
+                    <aside class="notes">
+                        Самое интересно в этом подходе как же избегать блокировок ивент лупа
+                        1) самое распространенный случай это отсутствие клиента для БД
+                        2) Странное АПИ без аргументов по ключу
+                        3) По умолчанию 4 потока в пуле
+                    </aside>
                 </section>
 <!-- ####################################################################  -->
 				<section>
-                    <h6>ThreadPool Notes</h6>
+                    <h6>ThreadPool notes</h6>
                     <ul>
                         <li>Convenient workaround for blocking calls</li>
                         <li>No way to kill thread if task stuck inside</li>
@@ -183,6 +239,14 @@ loop.run_until_complete(test_example())
                             with blocking client</li>
                     </ul>
 
+                    <aside class="notes">
+                        На что необходимо обратить внимание
+
+                        1) простой и надежный способ не блокировать ивент луп
+                        2) asyncio не добавляет ни какой магии, поток все так же нельзя уничтожить если там что то застряло
+                        3) Если происходите много видений память и при этом используются сторонние библиотеки с С расширениями (pandas), можно заметить очень большой расход виртуальной память, что не нравится docker/yarn
+                        4) размер пула, необходимо выбирать как можно меньше (8 мб на потов линуксе) и это число будет равно количеству параллельных запросов к БД
+                    </aside>
                 </section>
 <!-- ####################################################################  -->
 				<section>
@@ -206,18 +270,31 @@ loop.run_until_complete(go(loop, executor))
 					</code></pre>
                     <code>ProcessPoolExecutor</code> has same interface as
                     <code>ThreadPoolExecutor</code>
+                    <aside class="notes">
+                        Если необходимо перемолоть много  CPU интенсивных задач, вместо ТредПула можно воспользоваться ПросессПулом
+                        АПИ абсолютно одинаковый
+                    </aside>
                 </section>
 <!-- ####################################################################  -->
 				<section>
                     <h6>ProcessPool Notes</h6>
                     <ul>
-                        <li>Easy to terminate</li>
-                        <li>Consumes a lot of memory</li>
+                        <li>Processes easy to terminate</li>
+                        <li>Processes consume a lot of memory</li>
+                        <li>IPC is expensive because of serialization issues</li>
                         <li>Process should be created and warmed as soon as
                             possible in order not to copy memory due to
                             <code>fork()</code></li>
                     </ul>
+                    <aside class="notes">
+                        Особенности Процесс  пула следующие
+                        1) легко уничтожить процесс, для это есть специальный АПИ
+                        2) процессы потребляют на много больше памяти
+                        3) Пересылка данных между процессами очень дорогая из за стерилизации и десериализации
+                        4) ПроцессПулл должен быть создан как можно раньше что бы не наследовать всю память родительского процесса
+                        5) Процесс пул создается лениво и его необходимо разогревать
 
+                    </aside>
                 </section>
 <!-- ####################################################################  -->
 				<section>
@@ -225,6 +302,13 @@ loop.run_until_complete(go(loop, executor))
                     <img src="images/loop_inside.svg" height="500px">
                     <p>Application may spin event loop at will, to perform
                     IO heavy computations.</p>
+                    <aside class="notes">
+                        Следующий подход, встроенный ивент луп
+                        1) В основном процессе выполняется синхронный код
+                        2) Код взаимодействуе с тред пулом если надо
+                        3) Ивент луп запускается на конечный промежуток время, для выполнения IO тяжелых задач
+                        4) После выполнения луп уничтожается
+                    </aside>
                 </section>
 <!-- ####################################################################  -->
 				<section>
@@ -254,6 +338,10 @@ def main():
 					</code></pre>
                     Scraping  or concurrent upload to external server are most
                     popular use cases.
+                    <aside class="notes">
+                        Пример, нам необходим сделать множество параллельных запросов по разным адресам. В синхронном приложении в одном потоке это сделать не возможно. В итоге у нас 2 пути: потоки или корутины
+                        run_until_complete можно выполнить любую асинхронную операцию  в синхронном стиле
+                    </aside>
                 </section>
 <!-- ####################################################################  -->
 				<section>
@@ -277,6 +365,14 @@ if __name__ == "__main__":
 					</code></pre>
                     Using coroutines inside sync code is not always good idea.
                     In this particular case it slows down database access.
+                    <aside class="notes">
+                        Но следует помнить не все, что асинхронно хорошо
+                        1) существует возможно пользоваться асинхронными клиентами к разным БД
+                        2) но это не означает, что код станет быстрее работать
+                        3) при запросе в редис, асинхронный клиент потратит несколько больше времени
+                        на получение данных. Связанно это с тем что необходимо сделать
+                        несколько итераций лупа, которые тоже занимают время
+                    </aside>
                 </section>
 <!-- ####################################################################  -->
 				<section>
@@ -284,6 +380,13 @@ if __name__ == "__main__":
                     <img src="images/sync_leader.svg" height="500px">
                     <p>Application may delegate IO heavy tasks to dedicated
                     loop in separate thread.</p>
+                    <aside class="notes">
+                        Следующий подход. В основном приложении выполняется синхронный код, а ивент луп крутится в отдельном фоновом потоке.
+
+                        Синхронный код делегирует задачи ввода вывод в этот поток
+                        Этот подход иногда используется в клиентах к разным БД
+
+                    </aside>
                 </section>
 <!-- ####################################################################  -->
 				<section>
@@ -312,6 +415,12 @@ class AioThread(Thread):
 					</code></pre>
                     Make sure you have means to signal that loop has been
                     started, and you can finalize thread properly
+                    <aside class="notes">
+                        Пример по коду
+                        1) Необходимо просигналить что луп запустился
+                        2) Подготовить методы для выполнения крутит
+                        3) метод для корректного завершения потока
+                    </aside>
                 </section>
 <!-- ####################################################################  -->
 				<section>
@@ -333,11 +442,13 @@ def main():
     except Exception as exc:
         print('The coroutine raised an exception: {!r}'.format(exc))
 					</code></pre>
-                    <ul>
-                    <li>Make sure you wait for loop to start.</li>
-                    <li>Calling <code>future.cancel()</code> in main thread
-                        will cancel asyncio coroutine in background thread.</li>
-                    </ul>
+                    Make sure you wait for loop to start. Calling <code>future.cancel()</code>
+                    in main thread will cancel asyncio coroutine in background thread.</li>
+                    <aside class="notes">
+                        Приме использования по коду
+                        1) не забываем подождать запуска
+                        2) future.cancel удобный апи для завершения задачи в соседнем треде
+                    </aside>
                 </section>
 <!-- ####################################################################  -->
 				<section>
@@ -362,6 +473,12 @@ class TwistedConnection(Connection):
 					</code></pre>
                     Cassandra's <a href="https://github.com/datastax/python-driver/blob/master/cassandra/io/twistedreactor.py">python driver</a>
                     is sync but connection objects spin event loop, in this case twisted's reactor
+                    <aside class="notes">
+                        Например очень похожий подход используется в python драйвере к БД каскадна
+                        1) в этом драйвере возможно пользоваться разными реализациями ивент лупов: asyncore / gevent /twisted / libuv wrapper
+                        2)  ввод вывод происходит только в потоках с ивент луком
+                        3) Есть методы прямой записи в сокет и обработки буфера
+                    </aside>
                 </section>
 <!-- ####################################################################  -->
 				<section>
@@ -372,6 +489,10 @@ queue = janus.Queue(loop=loop)
 await queue.async_q.get()
 queue.sync_q.put(i)
 					</code></pre>
+                    <aside class="notes">
+                        Минутка рекламы янус очередь с синхронным и асинхронным итерфейсом
+
+                    </aside>
 				</section>
 <!-- ####################################################################  -->
 				<section>
@@ -398,11 +519,22 @@ loop.run_until_complete(fut)
 					</code></pre>
                     <code>janus</code> has two APIs for same queue: sync like
                     <code>queue.Queue</code> and async like <code>asyncio.Queue</code>
+                    <aside class="notes">
+                        Пример по коду
+                        1) в треде добавляем задачи в очередь
+                        2) в корутине забираем
+                        3) два интерфейса синхронный и асинхронный
+                    </aside>
                 </section>
 <!-- ####################################################################  -->
 				<section>
                     <h6>Asyncio tips and tricks</h6>
                     <img src="images/funny.jpg" height="600px">
+                    <aside class="notes">
+                        Мы разобрались как запускать ивент луп, я бы хотел дать
+                        несколько рекомендаций для тех то таки решится создавать
+                        приложения на aio
+                    </aside>
 				</section>
 <!-- ####################################################################  -->
 				<section>
@@ -423,6 +555,8 @@ loop.run_until_complete(go(loop))
 loop.close()
 					</code></pre>
                     <code>loop</code> argument is required for most asyncio APIs.
+                    <aside class="notes">
+                    </aside>
 				</section>
 <!-- ####################################################################  -->
 				<section>
@@ -432,6 +566,8 @@ loop.close()
                         <footer>--Glyph Lefkowitz / author of Twisted</footer>
                     </blockquote>
                     <a href="https://groups.google.com/forum/#!msg/python-tulip/hr1kPZfMX8U/9uqdlbRuRsoJ">https://groups.google.com/forum/#!msg/python-tulip/hr1kPZfMX8U/9uqdlbRuRsoJ</a>
+                    <aside class="notes">
+                    </aside>
 				</section>
 <!-- ####################################################################  -->
 				<section>
@@ -443,11 +579,17 @@ loop.close()
                         <li>Easier to reason about code when you have nonstandard case like: two
                             threads two event loops, or main thread is sync second is async</li>
                     </ul>
+                    <aside class="notes">
+                    </aside>
 				</section>
 <!-- ####################################################################  -->
 				<section>
                     <h6>TIP: Think about graceful shutdown early</h6>
                     <p><img src="images/kill-9-1.jpg"></p>
+                    <aside class="notes">
+                        Корректное завершение, должно быть предусмотрено в любой приложение
+                        Пример по коду
+                    </aside>
 				</section>
 <!-- ####################################################################  -->
 				<section>
@@ -470,6 +612,8 @@ loop.run_until_complete(do_work(loop))
 					</code></pre>
                     <code>asyncio</code> will warn you with bunch of tracebacks
                     if you do not do proper shutdown.
+                    <aside class="notes">
+                    </aside>
 				</section>
 <!-- ####################################################################  -->
 				<section>
@@ -498,8 +642,14 @@ loop.close()
                     Now you can be sure that all requests are safe and served
                     and new requests is not accepted
 
+                    <aside class="notes">
+                        1) Похожий подход в  aiohttp
+                        2) Советы которые принимают соединения будут закрыты
+                        3) текущие запросы буду обрабатываться без остановки
+                    </aside>
 				</section>
-<!-- ####################################################################  -->
+
+<!-- ####################################################################
 				<section>
                     <h6>TIP: Think about resource lifetime to avoid resources
                         (Sockets) Leak</h6>
@@ -511,7 +661,6 @@ loop.close()
                     </ul>
 
 				</section>
-<!-- ####################################################################  -->
 				<section>
                     <h6>Make sure all responses has been released</h6>
                     <code>aiohttp.ClientSession</code> is your friend
@@ -533,7 +682,7 @@ loop.run_until_complete(go(loop))
                 Connection pooling helps to save on expensive connection
                 creation.
 				</section>
-<!-- ####################################################################  -->
+ ####################################################################  -->
 				<section>
                     <h6>Be a good citizen! Shutdown db connection pools
                         in your aiohttp app</h6>
@@ -555,6 +704,8 @@ async def init(loop):
                     <code>aiohttp</code> has handy signal <b>on_cleanup</b> for
                     database connections, as well as <b>on_shutdown</b> for
                     websockets
+                    <aside class="notes">
+                    </aside>
 				</section>
 
 <!-- ####################################################################  -->
@@ -575,11 +726,21 @@ class Foo:
         await self._task
 					</code></pre>
                     May be very tricky! Same approach as thread finalization
-                    should be employed or <code>task.cancel()</code></section>
+                    should be employed or <code>task.cancel()</code>
+                    <aside class="notes">
+                        Такой же подход должен быть использован и для фоновых
+                        корутин, которые выполняются в таске. Корутину
+                        необходимо подождать или отменить
+                    </aside>
+                </section>
 <!-- ####################################################################  -->
 				<section>
 					<h6>Asyncio Pitsfalls</h6>
                     <p><img src="images/train_fall.jpg" height=550px></p>
+                    <aside class="notes">
+                        Ну и на конец популярные подводные камни
+
+                    </aside>
 				</section>
 
 <!-- ####################################################################  -->
@@ -605,6 +766,8 @@ def go():
 					</code></pre>
                     Raising <code>StopIteration</code> is same as returning
                     from coroutine, so this could lead to hard of find bugs.
+                    <aside class="notes">
+                    </aside>
 				</section>
 <!-- ####################################################################  -->
 				<section>
@@ -628,6 +791,8 @@ loop.run_until_complete(zap(loop))
                     All three examples work as expeted, but asyncio will not track
                     first generator as coroutine as result will NOT complain
                     if you forget to yield it.
+                    <aside class="notes">
+                    </aside>
 				</section>
 <!-- ####################################################################  -->
 				<section>
@@ -638,11 +803,13 @@ async def foo(redis, loop):
     await redis.set("foo", "bar")
     await redis.set("baz", "zap")
 
-task = loop.ensure_future(foo(loop))
+task = loop.create_task(foo(loop))
 task.cancel()
 					</code></pre>
                     Canceling occurs on <code>yield from/await</code> points,
                     and may leave data structures in inconsistent state.
+                    <aside class="notes">
+                    </aside>
 				</section>
 
 <!-- ####################################################################  -->
@@ -652,6 +819,8 @@ task.cancel()
                         <p><img src="images/robot2.png" height=450px></p>
 						<a href="http://jettify.github.io/pyconua2016"> http://jettify.github.io/pyconua2016</a> <br>
                     </p>
+                    <aside class="notes">
+                    </aside>
 				</section>
 <!-- ####################################################################  -->
 
